@@ -3,9 +3,9 @@ use std::collections::binary_heap::BinaryHeap;
 use ordered_float::OrderedFloat;
 
 // Type for flows/capacities. Must be signed.
-type F = isize;
+pub type F = isize;
 // Type for weight/costs. Must be signed.
-type W = f32;
+pub type W = f32;
 static FINF: F = 10isize.pow(18);
 static WINF: W = 1e18;
 
