@@ -38,7 +38,7 @@ impl Edge {
 }
 
 pub struct FlowGraph {
-    edges: Vec<Vec<Edge>>,
+    pub edges: Vec<Vec<Edge>>,
 }
 
 impl FlowGraph {
