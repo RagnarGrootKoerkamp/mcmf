@@ -9,24 +9,24 @@ type W = f32;
 static FINF: F = 10isize.pow(18);
 static WINF: W = 1e18;
 
-struct Edge {
+pub struct Edge {
     // Constant values.
     /// index of neighbour
-    v: usize,
+    pub v: usize,
     /// index of reverse edge
-    r: usize,
+    pub r: usize,
     /// capacity
-    cap: F,
+    pub cap: F,
     /// cost
-    cost: W,
+    pub cost: W,
 
     // Variable.
     /// current flow.
-    f: F,
+    pub f: F,
 }
 
 impl Edge {
-    fn new(v: usize, r: usize, cap: F, cost: W) -> Self {
+    pub fn new(v: usize, r: usize, cap: F, cost: W) -> Self {
         Edge {
             v,
             r,
