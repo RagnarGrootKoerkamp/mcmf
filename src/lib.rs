@@ -5,9 +5,12 @@ use ordered_float::OrderedFloat;
 // Type for flows/capacities. Must be signed.
 pub type F = isize;
 // Type for weight/costs. Must be signed.
-pub type W = f32;
-static FINF: F = 10isize.pow(18);
-static WINF: W = 1e18;
+pub type W = f64;
+pub static FINF: F = 10isize.pow(18);
+pub static WINF: W = 10e18;
+pub static ZERO: W = 0.0;
+
+pub static EPS: W = 1e-6;
 
 pub struct Edge {
     // Constant values.
@@ -47,16 +50,6 @@ impl FlowGraph {
             edges: (0..n).map(|_| vec![]).collect(),
         }
     }
-    /// Add undirected edge from u to v with given capacity and cost.
-    pub fn add_edge(&mut self, u: usize, v: usize, c: F, cost: W) {
-        // fwd edge
-        let r = self.edges[v].len();
-        self.edges[u].push(Edge::new(v, r, c, cost));
-
-        // rev edge
-        let r = self.edges[u].len() - 1;
-        self.edges[v].push(Edge::new(u, r, c, -cost));
-    }
     /// Add directed edge from u to v with given capacity and cost.
     pub fn add_arc(&mut self, u: usize, v: usize, c: F, cost: W) {
         // fwd edge
@@ -92,6 +85,7 @@ impl PartialOrd for Q {
 }
 impl Ord for Q {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        // other.w.cmp(&self.w)
         OrderedFloat(other.w).cmp(&OrderedFloat(self.w))
     }
 }
@@ -129,8 +123,9 @@ impl<'g> MCMF<'g> {
         let t = *t;
 
         let mut maxflow: F = 0;
-        let mut cost: W = 0.0;
-        pot[s] = 0.0;
+        let mut cost: W = ZERO;
+        pot[s] = ZERO;
+        // Bellman-Ford to find initial potentials and remove negative weights.
         for _ in 0..n - 1 {
             let mut relax = false;
             // Try to Relax Dijkstra potentials.
@@ -147,12 +142,14 @@ impl<'g> MCMF<'g> {
             if !relax {
                 break;
             }
+            // eprintln!("RELAXED!");
         }
         for u in 0..n {
             if pot[u] == WINF {
-                pot[u] = 0.;
+                pot[u] = ZERO;
             }
         }
+        // eprintln!("Initial potentials: {:?}", pot);
 
         // Queue for Dijkstra.
         let mut q = BinaryHeap::new();
@@ -165,6 +162,7 @@ impl<'g> MCMF<'g> {
         let mut dist = vec![WINF; n];
 
         loop {
+            // eprintln!("LOOP");
             // Clear all structures.
             q.clear();
             p.fill(None);
@@ -173,9 +171,9 @@ impl<'g> MCMF<'g> {
             q.push(Q {
                 u: s,
                 c: FINF,
-                w: 0.,
+                w: ZERO,
             });
-            dist[s] = 0.;
+            dist[s] = ZERO;
 
             // current flow.
             let mut f: F;
@@ -183,6 +181,7 @@ impl<'g> MCMF<'g> {
             let mut tf: F = -1;
 
             while let Some(Q { u, c, w }) = q.pop() {
+                // eprintln!("  at node {u} with cost {w:.2} and flow {c}");
                 f = c;
                 if w != dist[u] {
                     // outdated queue element; a better path to u was found meanwhile.
@@ -190,13 +189,15 @@ impl<'g> MCMF<'g> {
                 }
                 // Update the flow to the target if none found yet.
                 if u == t && tf < 0 {
+                    // eprintln!("  found of {f} to t with cost {w:.2}");
                     tf = f;
                 }
 
                 // nbi: neighbour index.
                 for (nbi, e) in g.edges[u].iter().enumerate() {
                     let d = w + e.cost + pot[u] - pot[e.v];
-                    if e.cap > e.f && d < dist[e.v] {
+                    if e.cap > e.f && d + EPS < dist[e.v] {
+                        // eprintln!("push v {} d {d:.2} = w {w:.2} + cost {:+.2}", e.v, e.cost);
                         dist[e.v] = d;
                         q.push(Q {
                             u: e.v,
@@ -236,12 +237,24 @@ impl<'g> MCMF<'g> {
                 r.f -= f;
                 it = p[r.v];
             }
+            // eprintln!("Augment flow of len {i}");
             // Update potentials.
             for u in 0..n {
                 if dist[u] != WINF {
                     pot[u] += dist[u];
                 }
             }
+            // eprintln!("{maxflow:>10} => {cost:10.4}");
+            // eprintln!("Updated potentials: {:?}", pot);
+            // eprintln!("EDGE");
+            // for (u, edges) in g.edges.iter().enumerate() {
+            //     for e in edges {
+            //         eprintln!(
+            //             "  {:>2} -> {:>2} : flow = {:>3}/{:>3}, cost = {:.2}",
+            //             u, e.v, e.f, e.cap, e.cost
+            //         );
+            //     }
+            // }
         }
     }
 }
