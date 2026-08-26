@@ -218,7 +218,9 @@ impl<'g> MCMF<'g> {
             // Update the total flow.
             maxflow += f;
             // Fails once we get to `s`.
+            let mut len = 0;
             while let Some((u, nbi)) = it {
+                len += 1;
                 let e = &mut g.edges[u][nbi];
                 // Add flow to forward edge.
                 e.f += f;
@@ -244,7 +246,7 @@ impl<'g> MCMF<'g> {
                     pot[u] += dist[u];
                 }
             }
-            // eprintln!("{maxflow:>10} => {cost:10.4}");
+            eprintln!("{maxflow:>10} => {cost:10.4}  (path of len {len:>3})");
             // eprintln!("Updated potentials: {:?}", pot);
             // eprintln!("EDGE");
             // for (u, edges) in g.edges.iter().enumerate() {
